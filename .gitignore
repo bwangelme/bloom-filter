@@ -1,0 +1,42 @@
+# 二进制文件
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bloomfilter-cli
+
+# 测试二进制文件
+*.test
+
+# 覆盖率文件
+*.out
+
+# IDE 相关
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 依赖目录
+/vendor/
+
+# 日志文件
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+/tmp/
+/temp/
+
+# 本地配置文件
+.env
+.env.local
+
+# 编译输出目录
+/bin/
+/dist/

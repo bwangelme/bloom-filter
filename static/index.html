@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloom Filter 演示</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container { max-width: 800px; }
+        .result { min-height: 50px; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Bloom Filter 演示</h1>
+
+        <!-- 添加单个元素 -->
+        <div class="card mb-4">
+            <div class="card-header">添加单个元素</div>
+            <div class="card-body">
+                <div class="input-group">
+                    <input type="text" id="singleItem" class="form-control" placeholder="输入要添加的元素">
+                    <button class="btn btn-primary" onclick="addSingleItem()">添加</button>
+                </div>
+                <div id="singleAddResult" class="result mt-2"></div>
+            </div>
+        </div>
+
+        <!-- 批量添加元素 -->
+        <div class="card mb-4">
+            <div class="card-header">批量添加元素</div>
+            <div class="card-body">
+                <textarea id="batchItems" class="form-control mb-2" rows="4" placeholder="每行输入一个元素"></textarea>
+                <button class="btn btn-primary" onclick="addBatchItems()">批量添加</button>
+                <div id="batchAddResult" class="result mt-2"></div>
+            </div>
+        </div>
+
+        <!-- 检查元素是否存在 -->
+        <div class="card mb-4">
+            <div class="card-header">检查元素是否存在</div>
+            <div class="card-body">
+                <div class="input-group">
+                    <input type="text" id="checkItem" class="form-control" placeholder="输入要检查的元素">
+                    <button class="btn btn-success" onclick="checkItem()">检查</button>
+                </div>
+                <div id="checkResult" class="result mt-2"></div>
+            </div>
+        </div>
+
+        <!-- 批量检查元素 -->
+        <div class="card">
+            <div class="card-header">批量检查元素</div>
+            <div class="card-body">
+                <textarea id="batchCheckItems" class="form-control mb-2" rows="4" placeholder="每行输入一个要检查的元素"></textarea>
+                <button class="btn btn-success" onclick="checkBatchItems()">批量检查</button>
+                <div id="batchCheckResult" class="result mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 添加单个元素
+        async function addSingleItem() {
+            const item = document.getElementById('singleItem').value.trim();
+            if (!item) {
+                showResult('singleAddResult', '请输入要添加的元素', 'text-danger');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ item: item })
+                });
+                const data = await response.json();
+                showResult('singleAddResult', `元素 "${item}" 添加成功`, 'text-success');
+                document.getElementById('singleItem').value = '';
+            } catch (error) {
+                showResult('singleAddResult', '添加失败: ' + error.message, 'text-danger');
+            }
+        }
+
+        // 批量添加元素
+        async function addBatchItems() {
+            const items = document.getElementById('batchItems').value
+                .split('\n')
+                .map(item => item.trim())
+                .filter(item => item.length > 0);
+
+            if (items.length === 0) {
+                showResult('batchAddResult', '请输入要添加的元素', 'text-danger');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/batch-add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: items })
+                });
+                const data = await response.json();
+                showResult('batchAddResult', `成功添加 ${items.length} 个元素`, 'text-success');
+                document.getElementById('batchItems').value = '';
+            } catch (error) {
+                showResult('batchAddResult', '批量添加失败: ' + error.message, 'text-danger');
+            }
+        }
+
+        // 检查元素是否存在
+        async function checkItem() {
+            const item = document.getElementById('checkItem').value.trim();
+            if (!item) {
+                showResult('checkResult', '请输入要检查的元素', 'text-danger');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ item: item })
+                });
+                const data = await response.json();
+                const resultText = data.exists ?
+                    `元素 "${item}" 可能存在于集合中` :
+                    `元素 "${item}" 一定不在集合中`;
+                showResult('checkResult', resultText, data.exists ? 'text-success' : 'text-danger');
+            } catch (error) {
+                showResult('checkResult', '检查失败: ' + error.message, 'text-danger');
+            }
+        }
+
+        // 批量检查元素是否存在
+        async function checkBatchItems() {
+            const items = document.getElementById('batchCheckItems').value
+                .split('\n')
+                .map(item => item.trim())
+                .filter(item => item.length > 0);
+
+            if (items.length === 0) {
+                showResult('batchCheckResult', '请输入要检查的元素', 'text-danger');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/batch/contains', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: items })
+                });
+                const data = await response.json();
+
+                let resultHtml = '<div class="list-group">';
+                for (const [item, exists] of Object.entries(data.results)) {
+                    const statusClass = exists ? 'text-success' : 'text-danger';
+                    const statusText = exists ? '可能存在于集合中' : '一定不在集合中';
+                    resultHtml += `<div class="list-group-item">
+                        <span class="fw-bold">${item}</span>:
+                        <span class="${statusClass}">${statusText}</span>
+                    </div>`;
+                }
+                resultHtml += '</div>';
+
+                document.getElementById('batchCheckResult').innerHTML = resultHtml;
+                document.getElementById('batchCheckItems').value = '';
+            } catch (error) {
+                showResult('batchCheckResult', '批量检查失败: ' + error.message, 'text-danger');
+            }
+        }
+
+        // 显示结果
+        function showResult(elementId, message, className) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${className}">${message}</div>`;
+        }
+    </script>
+</body>
+</html>

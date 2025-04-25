@@ -1,0 +1,13 @@
+redis:
+  addr: "localhost:6379"
+  key: "bloomfilter"
+  password: ""
+  db: 0
+
+bloom:
+  expected_items: 1000
+  false_positive_rate: 0.01
+
+server:
+  port: 8080
+  host: "0.0.0.0"
